@@ -1659,8 +1659,8 @@ namespace karto
      */
     inline void Add(const Vector2d& rPoint)
     {
-      m_Minimum.MakeFloor(rPoint);
-      m_Maximum.MakeCeil(rPoint);
+      m_Minimum.MakeFloor(rPoint - Vector2d(0.3,0.3));
+      m_Maximum.MakeCeil(rPoint + Vector2d(0.3,0.3));
     }
 
     /**

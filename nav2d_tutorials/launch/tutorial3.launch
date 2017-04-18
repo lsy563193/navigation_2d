@@ -27,13 +27,14 @@
 		<rosparam file="$(find nav2d_tutorials)/param/navigator.yaml"/>
 	</node>
 
-	<node name="GetMap" pkg="nav2d_navigator" type="get_map_client" />
-	<node name="Explore" pkg="nav2d_navigator" type="explore_client" />
-	<node name="SetGoal" pkg="nav2d_navigator" type="set_goal_client" />
+	<node name="get_map_client" pkg="nav2d_navigator" type="get_map_client" />
+	<node name="explore_client" pkg="nav2d_navigator" type="explore_client" />
+	<node name="set_goal_client" pkg="nav2d_navigator" type="set_goal_client" />
 
 	<!-- Start the joystick-driver and remote-controller for operation-->
 	<!--<node name="Joystick" pkg="joy" type="joy_node" />-->
 	<!--<node name="Remote" pkg="nav2d_remote" type="remote_joy" />-->
+	<include file="$(find p2os_urdf)/launch/pioneer3at_urdf.launch" />
 
 	<!-- RVIZ to view the visualization -->
 	<node name="RVIZ" pkg="rviz" type="rviz" args=" -d $(find nav2d_tutorials)/param/tutorial3.rviz" />
