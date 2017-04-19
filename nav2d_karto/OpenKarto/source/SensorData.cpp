@@ -16,6 +16,8 @@
  */
 
 #include <OpenKarto/SensorData.h>
+#include <rosconsole/macros_generated.h>
+#include <ros/ros.h>
 
 namespace karto
 {
@@ -134,8 +136,8 @@ namespace karto
     {
       m_BoundingBox.Add(*iter);
       rangePointsSum += *iter;
-    }          
-    
+    }
+
     // compute barycenter
     kt_double nPoints = static_cast<kt_double>(rPointReadings.Size());
     if (nPoints != 0.0)
@@ -213,7 +215,7 @@ namespace karto
       point.SetX(scanPose.GetX() + (rangeReading * cos(angle)));
       point.SetY(scanPose.GetY() + (rangeReading * sin(angle)));
       m_UnfilteredPointReadings.Add(point);
-      
+
       if (math::InRange(rangeReading, minimumRange, rangeThreshold))
       {
         m_FilteredPointReadings.Add(point);

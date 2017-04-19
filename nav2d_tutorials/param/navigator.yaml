@@ -17,3 +17,6 @@ exploration_goal_distance: 3.0
 # Strategy MinPos
 min_target_area_size: 1.0
 visualize_frontiers: true
+exploration_strategy: NearestFrontierPlanner
+#exploration_strategy: MultiWavfrontPlanner
+#exploration_strategy: MinPosPlanner

@@ -4,7 +4,7 @@ update_frequency: 5.0
 publish_frequency: 1.0
 
 #set if you want the voxel map published
-publish_voxel_map: true
+publish_voxel_map: false
 
 #set to true if you want to initialize the costmap from a static map
 static_map: false
@@ -26,7 +26,7 @@ max_obstacle_height: 2.0
 raytrace_range: 4.5
 
 robot_radius: 0.4
-inflation_radius: 0.75
+inflation_radius: 0.25
 cost_scaling_factor: 2.0
 lethal_cost_threshold: 100
 observation_sources: scan
