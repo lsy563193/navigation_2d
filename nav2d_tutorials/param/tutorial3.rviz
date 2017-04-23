@@ -4,10 +4,10 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Path1
         - /Marker1
-        - /Marker2
       Splitter Ratio: 0.542328
-    Tree Height: 762
+    Tree Height: 760
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -58,10 +58,10 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/GridCells
       Color: 25; 255; 0
-      Enabled: true
+      Enabled: false
       Name: Corrected
       Topic: /Operator/route
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
@@ -202,7 +202,7 @@ Visualization Manager:
       Color: 255; 0; 255
       Enabled: true
       Name: Path
-      Topic: /Navigator/plan
+      Topic: /Operator/route
       Value: true
     - Class: rviz/Marker
       Enabled: true
@@ -221,97 +221,19 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/TF
-      Enabled: true
+      Enabled: false
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        back_sonar:
-          Value: true
-        base_footprint:
-          Value: true
-        base_laser_link:
-          Value: true
-        base_link:
-          Value: true
-        front_sonar:
-          Value: true
-        map:
-          Value: true
-        odom:
-          Value: true
-        offset:
-          Value: true
-        p3at_back_left_axle:
-          Value: true
-        p3at_back_left_hub:
-          Value: true
-        p3at_back_left_wheel:
-          Value: true
-        p3at_back_right_axle:
-          Value: true
-        p3at_back_right_hub:
-          Value: true
-        p3at_back_right_wheel:
-          Value: true
-        p3at_front_left_axle:
-          Value: true
-        p3at_front_left_hub:
-          Value: true
-        p3at_front_left_wheel:
-          Value: true
-        p3at_front_right_axle:
-          Value: true
-        p3at_front_right_hub:
-          Value: true
-        p3at_front_right_wheel:
-          Value: true
-        top_plate:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          offset:
-            odom:
-              base_footprint:
-                base_link:
-                  back_sonar:
-                    {}
-                  base_laser_link:
-                    {}
-                  front_sonar:
-                    {}
-                  p3at_back_left_axle:
-                    p3at_back_left_hub:
-                      p3at_back_left_wheel:
-                        {}
-                  p3at_back_right_axle:
-                    p3at_back_right_hub:
-                      p3at_back_right_wheel:
-                        {}
-                  p3at_front_left_axle:
-                    p3at_front_left_hub:
-                      p3at_front_left_wheel:
-                        {}
-                  p3at_front_right_axle:
-                    p3at_front_right_hub:
-                      p3at_front_right_wheel:
-                        {}
-                  top_plate:
-                    {}
-      Update Interval: 0
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /Navigator/frontiers
-      Name: Marker
-      Namespaces:
         {}
-      Queue Size: 100
-      Value: true
+      Update Interval: 0
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /Navigator/markers
@@ -343,7 +265,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 0.005
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
@@ -352,7 +274,7 @@ Visualization Manager:
         Value: false
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 26.0513
+      Scale: 28.2665
       Target Frame: base_link
       Value: TopDownOrtho (rviz)
       X: -1.3868
@@ -364,7 +286,7 @@ Window Geometry:
   Height: 1056
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000017c00000394fc0200000007fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006f00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000394000000f300fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000394fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000028000000b10000006f00fffffffc000000df000002dd000000bd00fffffffa000000010100000002fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000000ffffffff0000000000000000fb0000000a0056006900650077007301000006710000010f0000010f00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000078000000042fc0100000002fb0000000800540069006d00650100000000000007800000027900fffffffb0000000800540069006d00650100000000000004500000000000000000000004e90000039400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000017c00000392fc0200000007fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006400fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002800000392000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000392fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000028000000b10000006400fffffffc000000df000002db000000b000fffffffa000000010100000002fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000000ffffffff0000000000000000fb0000000a0056006900650077007301000006710000010f0000010f00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000078000000042fc0100000002fb0000000800540069006d0065010000000000000780000002f600fffffffb0000000800540069006d00650100000000000004500000000000000000000004e90000039200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

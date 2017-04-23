@@ -12,7 +12,7 @@ navigation_goal_angle: 1.0
 navigation_homing_distance: 4.0
 
 # Find new exploartion target when in range of current one (meter)
-exploration_goal_distance: 3.0
+exploration_goal_distance: 0.01
 
 # Strategy MinPos
 min_target_area_size: 1.0
