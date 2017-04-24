@@ -831,9 +831,10 @@ void RobotNavigator::receiveExploreGoal(const nav2d_navigator::ExploreGoal::Cons
 		bool reCheck = lastCheck == 0 || cycle - lastCheck > recheckCycles;
 		bool planOk = mCurrentPlan && mCurrentPlan[mStartPoint] >= 0;
 		bool nearGoal = planOk && ((cycle - lastCheck) > recheckThrottle && mCurrentPlan[mStartPoint] <= mExplorationGoalDistance);
-		
+		reCheck = false;
 		if(reCheck || nearGoal)
 		{
+			ROS_ERROR("nearGoal = %f,%f", mCurrentPlan[mStartPoint],mExplorationGoalDistance);
 			WallTime startTime = WallTime::now();
 			lastCheck = cycle;
 

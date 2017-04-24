@@ -16,6 +16,9 @@ NearestFrontierPlanner::~NearestFrontierPlanner()
 int NearestFrontierPlanner::findExplorationTarget(GridMap* map, unsigned int start, unsigned int &goal)
 {
 	// Create some workspace for the wavefront algorithm
+	static bool finish = false;
+	if (finish)
+		return EXPL_FINISHED;
 	unsigned int mapSize = map->getSize();
 	double* plan = new double[mapSize];
 	for(unsigned int i = 0; i < mapSize; i++)
@@ -34,7 +37,7 @@ int NearestFrontierPlanner::findExplorationTarget(GridMap* map, unsigned int sta
 	double linear = map->getResolution();
 	bool foundFrontier = false;
 	int cellCount = 0;
-	
+
 	// Do full search with weightless Dijkstra-Algorithm
 	while(!queue.empty())
 	{
@@ -44,7 +47,7 @@ int NearestFrontierPlanner::findExplorationTarget(GridMap* map, unsigned int sta
 		distance = next->first;
 		unsigned int index = next->second;
 		queue.erase(next);
-		
+
 		// Add all adjacent cells
 		if(map->isFrontier(index))
 		{
@@ -56,20 +59,27 @@ int NearestFrontierPlanner::findExplorationTarget(GridMap* map, unsigned int sta
 		{
 			unsigned int ind[4];
 
-			ind[0] = index - 1;               // left
+//			ind[0] = index - 1;               // left
 			ind[1] = index + 1;               // right
-			ind[2] = index - map->getWidth(); // up
-			ind[3] = index + map->getWidth(); // down
-			
-			for(unsigned int it = 0; it < 4; it++)
-			{
-				unsigned int i = ind[it];
+//			ind[2] = index - map->getWidth(); // up
+//			ind[3] = index + map->getWidth(); // down
+
+//			for(unsigned int it = 0; it < 4; it++)
+//			{
+//				unsigned int i = ind[it];
+				unsigned int i = ind[1];
 				if(map->isFree(i) && plan[i] == -1)
 				{
 					queue.insert(Entry(distance+linear, i));
 					plan[i] = distance+linear;
+				}else if(!map->isFree(i))
+				{
+					foundFrontier = true;
+					goal = index-5;
+					finish = true;
+					break;
 				}
-			}
+//			}
 		}
 	}
 
