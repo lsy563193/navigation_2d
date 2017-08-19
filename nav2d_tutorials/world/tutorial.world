@@ -14,13 +14,13 @@ floorplan
 ( 
   name "tutorial"
   bitmap "autolab_fill.png"
-  size [34 30 1.0]
-  pose [0 0 0 0]
+  size [34.000 30.000 1.000]
+  pose [0.000 0.000 0.000 0.000]
 )
 
 # Put a single robot into the world
 pioneer3at
 (
   name "robot"
-  pose [-0 -2 0 0]
+  pose [0.000 -2.000 0.000 0.000]
 )

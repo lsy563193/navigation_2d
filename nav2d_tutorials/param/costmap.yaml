@@ -13,7 +13,8 @@ static_map: false
 rolling_window: true
 width: 6.0
 height: 6.0
-resolution: 0.05
+resolution: 0.1
+#resolution: 0.5
 #end - COMMENT these lines if you set static_map to true
 
 map_type: costmap

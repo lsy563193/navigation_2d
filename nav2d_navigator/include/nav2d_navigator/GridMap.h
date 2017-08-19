@@ -4,6 +4,7 @@
 #include "ros/ros.h"
 #include "nav_msgs/OccupancyGrid.h"
 
+#define CLEANED 2
 class GridMap
 {
 public:
@@ -74,6 +75,12 @@ public:
 	{
 		char value = getData(index);
 		if(value >= 0 && value < mLethalCost) return true;
+		return false;
+	}
+	bool isCleaned(unsigned int index)
+	{
+		char value = getData(index);
+		if(value == CLEANED) return true;
 		return false;
 	}
 

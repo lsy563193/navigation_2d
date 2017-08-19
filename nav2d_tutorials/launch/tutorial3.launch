@@ -1,23 +1,25 @@
 <launch>
 
+	<!--<env name="ROSCONSOLE_CONFIG_FILE"-->
+		 <!--value="$(find nav2d_tutorials)/custom_rosconsole.conf"/>-->
 	<!-- Some general parameters -->
 	<param name="use_sim_time" value="true" />
 	<rosparam file="$(find nav2d_tutorials)/param/ros.yaml"/>
 
 	<!-- Start Stage simulator with a given environment -->
-	<node name="Stage" pkg="stage_ros" type="stageros" args="$(find nav2d_tutorials)/world/tutorial.world">
+	<node name="Stage" pkg="stage_ros" type="stageros" args="$(find nav2d_tutorials)/world/tutorial.world " >
 		<param name="base_watchdog_timeout" value="0" />
 	</node>
 
 	<!-- Start the Operator to control the simulated robot -->
-	<node name="Operator" pkg="nav2d_operator" type="operator" >
+	<node name="Operator" pkg="nav2d_operator" type="operator" output="screen">
 		<remap from="scan" to="base_scan"/>
 		<rosparam file="$(find nav2d_tutorials)/param/operator.yaml"/>
 		<rosparam file="$(find nav2d_tutorials)/param/costmap.yaml" ns="local_map" />
 	</node>
 
 	<!-- Start Mapper to genreate map from laser scans -->
-	<node name="Mapper" pkg="nav2d_karto" type="mapper">
+	<node name="Mapper" pkg="nav2d_karto" type="mapper" output="screen">
 		<remap from="scan" to="base_scan"/>
 		<rosparam file="$(find nav2d_tutorials)/param/mapper.yaml"/>
 	</node>
@@ -25,19 +27,22 @@
 	<!--<include file="$(find gmapping)/launch/slam_gmapping_pr2.launch" />-->
 
 	<!-- Start the Navigator to move the robot autonomously -->
-	<node name="Navigator" pkg="nav2d_navigator" type="navigator">
+	<node name="Navigator" pkg="nav2d_navigator" type="navigator" output="screen">
+		<env name="ROSCONSOLE_CONFIG_FILE"
+			 value="$(find nav2d_tutorials)/custom_rosconsole.conf"/>
 		<rosparam file="$(find nav2d_tutorials)/param/navigator.yaml"/>
 	</node>
 
-	<node name="get_map_client" pkg="nav2d_navigator" type="get_map_client" />
-	<node name="explore_client" pkg="nav2d_navigator" type="explore_client" />
-	<node name="set_goal_client" pkg="nav2d_navigator" type="set_goal_client" />
+	<node name="get_map_client" pkg="nav2d_navigator" type="get_map_client" output="screen"/>
+	<node name="explore_client" pkg="nav2d_navigator" type="explore_client" output="screen"/>
+	<node name="set_goal_client" pkg="nav2d_navigator" type="set_goal_client" output="screen"/>
 
 	<!-- Start the joystick-driver and remote-controller for operation-->
 	<!--<node name="Joystick" pkg="joy" type="joy_node" />-->
 	<!--<node name="Remote" pkg="nav2d_remote" type="remote_joy" />-->
 	<include file="$(find p2os_urdf)/launch/pioneer3at_urdf.launch" />
 
+	<!--<node name="coverage_server" pkg="coverage_2d" type="coverage_server" />-->
 	<!-- RVIZ to view the visualization -->
 	<node name="RVIZ" pkg="rviz" type="rviz" args=" -d $(find nav2d_tutorials)/param/tutorial3.rviz" />
 

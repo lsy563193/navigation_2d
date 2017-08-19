@@ -27,11 +27,21 @@
 	</node>
 
 	<!-- Start the Navigator to move the robot autonomously -->
-	<node name="Navigator" pkg="nav2d_navigator" type="navigator">
+	<!--<node name="Navigator" pkg="nav2d_navigator" type="navigator" output="screen">-->
+		<!--<rosparam file="$(find nav2d_tutorials)/param/navigator.yaml"/>-->
+	<!--</node>-->
+
+	<!-- Start the Navigator to move the robot autonomously -->
+	<node name="Navigator" pkg="nav2d_navigator" type="navigator" output="screen">
+		<env name="ROSCONSOLE_CONFIG_FILE"
+			 value="$(find nav2d_tutorials)/custom_rosconsole.conf"/>
 		<rosparam file="$(find nav2d_tutorials)/param/navigator.yaml"/>
 	</node>
 
-	<node name="SetGoal" pkg="nav2d_navigator" type="set_goal_client" />
+	<!--<node name="SetGoal" pkg="nav2d_navigator" type="set_goal_client" />-->
+	<node name="get_map_client" pkg="nav2d_navigator" type="get_map_client" output="screen"/>
+	<node name="explore_client" pkg="nav2d_navigator" type="explore_client" output="screen"/>
+	<node name="set_goal_client" pkg="nav2d_navigator" type="set_goal_client" output="screen"/>
 
 	<!-- Start the joystick-driver and remote-controller for operation-->
 	<!--<node name="Joystick" pkg="joy" type="joy_node" />-->
@@ -39,6 +49,7 @@
 
 	<include file="$(find p2os_urdf)/launch/pioneer3at_urdf.launch" />
 
+	<!--<node name="coverage_server" pkg="coverage_2d" type="coverage_server" />-->
 	<!-- RVIZ to view the visualization -->
 	<node name="RVIZ" pkg="rviz" type="rviz" args=" -d $(find nav2d_tutorials)/param/tutorial2.rviz" />
 

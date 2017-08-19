@@ -139,6 +139,8 @@ void MapInflationTool::enqueueObstacle(unsigned int index, unsigned int sx, unsi
 	mInflationQueue.push(cell);
 	mInflationMarkers[index] = 1;
 	char value = costLookup(mx, my, sx, sy);
-	mGridMap->setData(index, value);
-//	ROS_DEBUG("Set cell %d cost to %d", index, value);
+	if(mGridMap->getData(index) != 101)
+		mGridMap->setData(index, value);
+	else
+	ROS_ERROR("Set cell %d cost to %d", index, value);
 }

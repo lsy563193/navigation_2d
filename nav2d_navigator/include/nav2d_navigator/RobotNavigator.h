@@ -51,6 +51,7 @@ private:
 	ros::ServiceClient mGetMapClient;
 	ros::Subscriber mGoalSubscriber;
 	ros::Publisher mPlanPublisher;
+	ros::Publisher mCleanPathPublisher;
 	ros::Publisher mCommandPublisher;
 	ros::Publisher mMarkerPublisher;
 	ros::ServiceServer mStopServer;
@@ -89,6 +90,7 @@ private:
 	GridMap mCurrentMap;
 	double* mCurrentPlan;
 
+	std::vector<std::pair<int,int>> mCleanedMap;
 	double mInflationRadius;
 	double mRobotRadius;
 	unsigned int mCellInflationRadius;

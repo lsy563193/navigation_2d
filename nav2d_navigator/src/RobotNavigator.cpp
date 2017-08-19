@@ -7,9 +7,10 @@
 
 #include <set>
 #include <map>
+#include <actionlib/client/simple_action_client.h>
 
 #define PI 3.14159265
-#define FREQUENCY 5.0
+#define FREQUENCY 40.0
 
 using namespace ros;
 using namespace tf;
@@ -30,7 +31,8 @@ RobotNavigator::RobotNavigator()
 	NodeHandle navigatorNode("~/");
 	mPlanPublisher = navigatorNode.advertise<nav_msgs::GridCells>("plan", 1);
 	mMarkerPublisher = navigatorNode.advertise<visualization_msgs::Marker>("markers", 1, true);
-	
+	mCleanPathPublisher = navigatorNode.advertise<nav_msgs::GridCells>("CleanPath", 1);
+
 	// Get parameters
 	navigatorNode.param("map_inflation_radius", mInflationRadius, 1.0);
 	navigatorNode.param("robot_radius", mRobotRadius, 0.3);
@@ -87,7 +89,7 @@ RobotNavigator::RobotNavigator()
 	{
 		mGetMapActionServer = NULL;
 	}
-	
+
 	mHasNewMap = false;
 	mIsStopped = false;
 	mIsPaused = false;
@@ -106,15 +108,15 @@ RobotNavigator::~RobotNavigator()
 }
 
 bool RobotNavigator::getMap()
-{	
+{
 	if(mHasNewMap) return true;
-	
+
 	if(!mGetMapClient.isValid())
 	{
 		ROS_ERROR("GetMap-Client is invalid!");
 		return false;
 	}
-	
+
 	nav_msgs::GetMap srv;
 	if(!mGetMapClient.call(srv))
 	{
@@ -122,10 +124,10 @@ bool RobotNavigator::getMap()
 		return false;
 	}
 	mCurrentMap.update(srv.response.map);
-	
+
 	if(mCurrentPlan) delete[] mCurrentPlan;
 	mCurrentPlan = new double[mCurrentMap.getSize()];
-	
+
 	if(mCellInflationRadius == 0)
 	{
 		ROS_INFO("Navigator is now initialized.");
@@ -134,7 +136,7 @@ bool RobotNavigator::getMap()
 		mInflationTool.computeCaches(mCellInflationRadius);
 		mCurrentMap.setLethalCost(mCostLethal);
 	}
-	
+
 	mHasNewMap = true;
 	return true;
 }
@@ -169,27 +171,103 @@ bool RobotNavigator::receivePause(std_srvs::Trigger::Request &req, std_srvs::Tri
 
 typedef std::multimap<double,unsigned int> Queue;
 typedef std::pair<double,unsigned int> Entry;
+typedef std::pair<unsigned int,unsigned int> Point;
 
 bool RobotNavigator::preparePlan()
 {
 	// Get the current map
-	if(!getMap()) // return false;
+	if (!getMap()) // return false;
 	{
-		if(mCellInflationRadius == 0) return false;
+		if (mCellInflationRadius == 0) return false;
 		ROS_WARN("Could not get a new map, trying to go with the old one...");
 	}
-	
+
 	// Where am I?
-	if(!setCurrentPosition()) return false;
-	
+	if (!setCurrentPosition()) return false;
+
 	// Clear robot footprint in map
 	unsigned int x = 0, y = 0;
-	if(mCurrentMap.getCoordinates(x, y, mStartPoint))
-		for(int i = -mCellRobotRadius; i < (int)mCellRobotRadius; i++)
-			for(int j = -mCellRobotRadius; j < (int)mCellRobotRadius; j++)
-				mCurrentMap.setData(x+i, y+j, 0);
-	
+	if (mCurrentMap.getCoordinates(x, y, mStartPoint))
+		for (int i = -mCellRobotRadius; i < (int) mCellRobotRadius; i++)
+			for (int j = -mCellRobotRadius; j < (int) mCellRobotRadius; j++)
+				mCurrentMap.setData(x + i, y + j, 0);
+
 	mInflationTool.inflateMap(&mCurrentMap);
+
+	nav_msgs::GridCells plan_msg;
+	plan_msg.header.frame_id = mMapFrame.c_str();
+	plan_msg.header.stamp = Time::now();
+
+	plan_msg.cell_width = mCurrentMap.getResolution();
+	plan_msg.cell_height = mCurrentMap.getResolution();
+
+	typedef ::geometry_msgs::Point_<std::allocator<void> > Point_;
+
+	struct Point:Point_ {
+		inline bool operator<(const Point &rhs) const
+		{
+			if(x <rhs.x)
+			return true;
+		else if(x == rhs.x)
+			return y < rhs.y;
+		return false;
+		}
+	};
+
+	//1 get cells
+	std::set<Point> cells;
+//	std::set<Point> cells;
+
+	// Clear robot footprint in map
+	std::vector<std::pair<int,int>>  mCleaningMap;
+//	unsigned int x = 0, y = 0;
+	mCurrentMap.getCoordinates(x, y, mStartPoint);
+	auto cur = std::make_pair(x,y);
+	mCleanedMap.push_back(std::make_pair(0,0));
+
+	for (auto delta = mCleanedMap.rbegin(); delta != mCleanedMap.rend(); delta++)
+	{
+		cur.first -= (*delta).first;
+		cur.second -= (*delta).second;
+
+		Point point;
+		int offset = mCellRobotRadius / 2;//offset = 2 = 5/2
+
+		//2 set map data
+		unsigned int cur_index = 0;
+		mCurrentMap.getIndex(cur.first, cur.second, cur_index);
+		auto Neighbors = mCurrentMap.getFreeNeighbors(cur_index,2);
+		ROS_INFO("cur_index(%d),mStartPoint(%d),delta(%d,%d),free Neighbors.size %d ",cur_index, mStartPoint,(*delta).first,(*delta).second,(int)Neighbors.size());
+		for(auto& neighbor : Neighbors){
+			mCurrentMap.setData(neighbor, CLEANED);
+			if(neighbor == cur_index)
+				ROS_INFO("cur index(%d),data(%d)",neighbor, mCurrentMap.getData(neighbor));
+		}
+
+		for(int i = -offset; i <= offset ; i++){
+			if(i==0)
+				ROS_INFO("point(%d,%d)",cur.first+i, cur.second);
+			for(int j= -offset; j <= offset ; j++){
+				point.x = ((cur.first+i + 0.5) * mCurrentMap.getResolution()) + mCurrentMap.getOriginX();
+				point.y = ((cur.second+j + 0.5) * mCurrentMap.getResolution()) + mCurrentMap.getOriginY();
+				point.z = 0.0;
+				cells.insert(point);
+			}
+		}
+	}
+
+	//3 set plan_msg
+	ROS_INFO("cells(%d)",(int)cells.size());
+		for(auto& cell:cells){
+
+			plan_msg.cells.push_back(cell);
+		}
+
+	//4 public plan_msg
+	mCleanPathPublisher.publish(plan_msg);
+
+	//5 pop cur
+	mCleanedMap.pop_back();
 	return true;
 }
 
@@ -204,7 +282,7 @@ bool RobotNavigator::createPlan()
 		marker.header.frame_id = "/map";
 		marker.header.stamp = ros::Time();
 		marker.id = 0;
-		marker.type = visualization_msgs::Marker::CYLINDER;
+		marker.type = visualization_msgs::Marker::CUBE;
 		marker.action = visualization_msgs::Marker::ADD;
 		marker.pose.position.x = mCurrentMap.getOriginX() + (((double)goal_x+0.5) * mCurrentMap.getResolution());
 		marker.pose.position.y = mCurrentMap.getOriginY() + (((double)goal_y+0.5) * mCurrentMap.getResolution());
@@ -213,8 +291,8 @@ bool RobotNavigator::createPlan()
 		marker.pose.orientation.y = 0.0;
 		marker.pose.orientation.z = 0.0;
 		marker.pose.orientation.w = 1.0;
-		marker.scale.x = mCurrentMap.getResolution() * 3.0;
-		marker.scale.y = mCurrentMap.getResolution() * 3.0;
+		marker.scale.x = mCurrentMap.getResolution() * 1.0;
+		marker.scale.y = mCurrentMap.getResolution() * 1.0;
 		marker.scale.z = 1.0;
 		marker.color.a = 1.0;
 		marker.color.r = 1.0;
@@ -252,16 +330,18 @@ bool RobotNavigator::createPlan()
 	}
 	
 	Queue::iterator next;
+	//distance为新的点到target点的距离而不是到start点的距离
 	double distance;
 	unsigned int x, y, index;
 	double linear = mCurrentMap.getResolution();
 	double diagonal = std::sqrt(2.0) * linear;
 	
-	// Do full search with Dijkstra-Algorithm
+	// Do full search with
 	while(!queue.empty())
 	{
 		// Get the nearest cell from the queue
 		next = queue.begin();
+		//目标点的距离为0
 		distance = next->first;
 		index = next->second;
 		queue.erase(next);
@@ -288,6 +368,7 @@ bool RobotNavigator::createPlan()
 			if(mCurrentMap.isFree(i))
 			{
 				double delta = (it < 4) ? linear : diagonal;
+				//新的距离 = 现有距离 + 距离差值 +
 				double newDistance = distance + delta + (10 * delta * (double)mCurrentMap.getData(i) / (double)mCostObstacle);
 				if(mCurrentPlan[i] == -1 || newDistance < mCurrentPlan[i])
 				{
@@ -297,7 +378,15 @@ bool RobotNavigator::createPlan()
 			}
 		}
 	}
-	
+
+/*	ROS_INFO("mCurrentPlan");
+	for(int i=0;i < mCurrentMap.getWidth(); i++){
+		for(int j=0;j<mCurrentMap.getHeight(); j++){
+			printf("%6.2lf ",mCurrentPlan[i*mCurrentMap.getWidth() +j]);
+		}
+		printf("\n");
+	}*/
+
 	if(mCurrentPlan[mStartPoint] < 0)
 	{
 		ROS_ERROR("No way between robot and goal!");
@@ -451,7 +540,7 @@ bool RobotNavigator::generateCommand()
 		}	
 		target = bestPoint;
 	}
-	
+
 	// Head towards (x,y)
 	unsigned int x = 0, y = 0;
 	if(!mCurrentMap.getCoordinates(x, y, target))
@@ -460,17 +549,17 @@ bool RobotNavigator::generateCommand()
 		return false;
 	}
 	double map_angle = atan2((double)y - current_y, (double)x - current_x);
-	
+
 	double angle = map_angle - mCurrentDirection;
 	if(angle < -PI) angle += 2*PI;
 	if(angle > PI) angle -= 2*PI;
-	
+
 	// Create the command message
 	nav2d_operator::cmd msg;
 	msg.Turn = -2.0 * angle / PI;
 	if(msg.Turn < -1) msg.Turn = -1;
 	if(msg.Turn >  1) msg.Turn = 1;
-	
+
 	if(mCurrentPlan[mStartPoint] > mNavigationHomingDistance || mStatus == NAV_ST_EXPLORING)
 		msg.Mode = 0;
 	else
@@ -483,6 +572,7 @@ bool RobotNavigator::generateCommand()
 	{
 		msg.Velocity = 0.5 + (mCurrentPlan[mStartPoint] / 2.0);
 	}
+//	ROS_INFO("Turn(%f),Velocity(%f)", msg.Turn,msg.Velocity);
 	mCommandPublisher.publish(msg);
 	return true;
 }
@@ -753,7 +843,7 @@ void RobotNavigator::receiveMoveGoal(const nav2d_navigator::MoveToPosition2DGoal
 			}
 			if(msg.Velocity > 1) msg.Velocity = 1;
 				msg.Mode = 1;
-				
+
 			mCommandPublisher.publish(msg);
 		}else
 		{
@@ -802,7 +892,9 @@ void RobotNavigator::receiveExploreGoal(const nav2d_navigator::ExploreGoal::Cons
 	unsigned int lastCheck = 0;
 	unsigned int recheckCycles = mMinReplanningPeriod * FREQUENCY;
 	unsigned int recheckThrottle = mMaxReplanningPeriod * FREQUENCY;
-	
+
+	 bool isTurn = false;
+//	unsigned int oldStartPoint = INT_MAX;
 	// Move to exploration target
 	Rate loopRate(FREQUENCY);
 	while(true)
@@ -825,30 +917,101 @@ void RobotNavigator::receiveExploreGoal(const nav2d_navigator::ExploreGoal::Cons
 			stop();
 			return;
 		}
-		
 		// Regularly recheck for exploration target
 		cycle++;
 		bool reCheck = lastCheck == 0 || cycle - lastCheck > recheckCycles;
 		bool planOk = mCurrentPlan && mCurrentPlan[mStartPoint] >= 0;
-		bool nearGoal = planOk && ((cycle - lastCheck) > recheckThrottle && mCurrentPlan[mStartPoint] <= mExplorationGoalDistance);
+//		ROS_ERROR("start(%d),mCurrentPlan[startPoint](%f)", mStartPoint, mCurrentPlan[mStartPoint]);
+		bool nearGoal = planOk && (/*(cycle - lastCheck) > recheckThrottle &&*/ mCurrentPlan[mStartPoint] <= mExplorationGoalDistance );
 		reCheck = false;
+
 		if(reCheck || nearGoal)
 		{
-			ROS_ERROR("nearGoal = %f,%f", mCurrentPlan[mStartPoint],mExplorationGoalDistance);
 			WallTime startTime = WallTime::now();
 			lastCheck = cycle;
 
 			bool success = false;
 			if(preparePlan())
 			{
+//				mCurrentMap.setData(oldStartPoint,101);
+//				ROS_ERROR("cur(%d),data(%d)", mStartPoint, mCurrentMap.getData(mStartPoint));
 				int result = mExplorationPlanner->findExplorationTarget(&mCurrentMap, mStartPoint, mGoalPoint);
-				switch(result)
+//				ROS_ERROR("gold(%d),data(%d)", mGoalPoint, mCurrentMap.getData(mGoalPoint));
+				switch (result)
 				{
-				case EXPL_TARGET_SET:
-					success = createPlan();
-					mStatus = NAV_ST_EXPLORING;
-					break;
-				case EXPL_FINISHED:
+					case EXPL_TARGET_SET:
+					{
+						success = createPlan();
+						uint goal_x, goal_y;
+						uint cur_x, cur_y;
+						mCurrentMap.getCoordinates(cur_x, cur_y, mStartPoint);
+						mCurrentMap.getCoordinates(goal_x, goal_y, mGoalPoint);
+						mCleanedMap.push_back(std::make_pair(goal_x - cur_x, goal_y - cur_y));
+
+						//make sure to reach goal before ture
+						double goal_angle = atan2((double) goal_y - cur_y, (double) goal_x - cur_x);
+						setCurrentPosition();
+						double deltaTheta = mCurrentDirection - goal_angle;
+						while (deltaTheta < -PI) deltaTheta += 2 * PI;
+						while (deltaTheta > PI) deltaTheta -= 2 * PI;
+
+						while (abs(deltaTheta)>(PI/4))
+						{
+							// Are we also headed correctly?
+							setCurrentPosition();
+							double deltaTheta = mCurrentDirection - goal_angle;
+							while (deltaTheta < -PI) deltaTheta += 2 * PI;
+							while (deltaTheta > PI) deltaTheta -= 2 * PI;
+
+							double diff = (deltaTheta > 0) ? deltaTheta : -deltaTheta;
+//							ROS_INFO_THROTTLE(1.0, "Heading: %.2f / Desired: %.2f / Difference: %.2f / Tolerance: %.2f", mCurrentDirection, goal_angle, diff, 0.1);
+							if (diff <= mNavigationGoalAngle)
+							{
+//								ROS_INFO("Final Heading: %.2f / Desired: %.2f / Difference: %.2f / Tolerance: %.2f", mCurrentDirection, goal_angle, diff, 0.1);
+								break;
+							}
+
+							nav2d_operator::cmd msg;
+							if (deltaTheta > 0)
+							{
+								msg.Turn = 1;
+								msg.Velocity = deltaTheta;
+							} else
+							{
+								msg.Turn = -1;
+								msg.Velocity = -deltaTheta;
+							}
+							if (msg.Velocity > 1) msg.Velocity = 1;
+							msg.Mode = 1;
+
+							mCommandPublisher.publish(msg);
+							/*
+				//stop move;
+				nav2d_operator::cmd stopMsg;
+				stopMsg.Turn = 0;
+				stopMsg.Velocity = 0;
+				mCommandPublisher.publish(stopMsg);
+
+				typedef actionlib::SimpleActionClient<nav2d_navigator::MoveToPosition2DAction> MoveClient;
+				MoveClient move_client("MoveTo", true);
+				ROS_INFO("Waiting for the move client.");
+				move_client.waitForServer();
+				nav2d_navigator::MoveToPosition2DGoal goal;
+				unsigned int x,y;
+				mCurrentMap.getCoordinates(x,y,mStartPoint);
+				goal.target_pose.x = ((x + 0.5) * mCurrentMap.getResolution()) + mCurrentMap.getOriginX();
+				goal.target_pose.y = ((y + 0.5) * mCurrentMap.getResolution()) + mCurrentMap.getOriginY();
+				goal.target_pose.theta = PI/2;
+				goal.target_distance = 0.1;
+				goal.target_angle = 0.1;
+				move_client.sendGoal(goal);
+				move_client.waitForResult(ros::Duration(10.));
+				*/
+						}
+					}
+						mStatus = NAV_ST_EXPLORING;
+						break;
+					case EXPL_FINISHED:
 					{
 						nav2d_navigator::ExploreResult r;
 						r.final_pose.x = mCurrentPositionX;
@@ -856,23 +1019,23 @@ void RobotNavigator::receiveExploreGoal(const nav2d_navigator::ExploreGoal::Cons
 						r.final_pose.theta = mCurrentDirection;
 						mExploreActionServer->setSucceeded(r);
 					}
-					stop();
-					ROS_INFO("Exploration has finished.");
-					return;
-				case EXPL_WAITING:
-					mStatus = NAV_ST_WAITING;
-					{
-						nav2d_operator::cmd stopMsg;
-						stopMsg.Turn = 0;
-						stopMsg.Velocity = 0;
-						mCommandPublisher.publish(stopMsg);
-					}
-					ROS_INFO("Exploration is waiting.");
-					break;
-				case EXPL_FAILED:
-					break;
-				default:
-					ROS_ERROR("Exploration planner returned invalid status code: %d!", result);
+						stop();
+						ROS_INFO("Exploration has finished.");
+						return;
+					case EXPL_WAITING:
+						mStatus = NAV_ST_WAITING;
+						{
+							nav2d_operator::cmd stopMsg;
+							stopMsg.Turn = 0;
+							stopMsg.Velocity = 0;
+							mCommandPublisher.publish(stopMsg);
+						}
+						ROS_INFO("Exploration is waiting.");
+						break;
+					case EXPL_FAILED:
+						break;
+					default:
+						ROS_ERROR("Exploration planner returned invalid status code: %d!", result);
 				}
 			}
 			
@@ -907,12 +1070,13 @@ void RobotNavigator::receiveExploreGoal(const nav2d_navigator::ExploreGoal::Cons
 			}
 
 			// Create a new command and send it to Operator
-			generateCommand();
+
+				generateCommand();
 		}
 		
 		// Sleep remaining time
 		spinOnce();
-		loopRate.sleep();
+//		loopRate.sleep();
 		if(loopRate.cycleTime() > ros::Duration(1.0 / FREQUENCY))
 			ROS_WARN("Missed desired rate of %.2fHz! Loop actually took %.4f seconds!",FREQUENCY, loopRate.cycleTime().toSec());
 	}
