@@ -9,7 +9,7 @@
 	</node>
 
 	<!-- Start the joystick-driver and remote-controller for operation-->
-	<node name="Joystick" pkg="joy" type="joy_node" />
+	<!--<node name="Joystick" pkg="joy" type="joy_node" />-->
 	<node name="SimController" pkg="nav2d_remote" type="sim_joy" args="2"/>
 
 	<node name="R0_MapAlign" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /robot_0/map 100"/>
